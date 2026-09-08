@@ -102,6 +102,111 @@
         </div>
     </div>
 
+    <!-- Modal Pemasukan -->
+    <div id="modalIncome" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="document.getElementById('modalIncome').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md modal-in overflow-hidden">
+            <div class="px-6 pt-6 pb-5 border-b border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-800">Pemasukan</h3>
+                    </div>
+                    <button onclick="document.getElementById('modalIncome').classList.add('hidden')"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" action="/transaction/income" class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tempat Tujuan</label>
+                    <select name="destination_wallet_id" required
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition">
+                        <option value="" disabled selected>Pilih tempat penerima</option>
+                        {% for w in wallets %}
+                        <option value="{{ w.id }}">{{ w.name }} (Rp{{ "{:,.0f}".format(w.current_balance) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nominal (Rp)</label>
+                    <input type="number" name="amount" required min="1" placeholder="0"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal</label>
+                    <input type="date" name="date" required value="{{ today }}"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Keterangan <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <input type="text" name="description" placeholder="Contoh: Gaji bulanan"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition">
+                </div>
+                <button type="submit"
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-3 rounded-xl transition cursor-pointer shadow-sm">
+                    Catat Pemasukan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pengeluaran -->
+    <div id="modalExpense" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="document.getElementById('modalExpense').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md modal-in overflow-hidden">
+            <div class="px-6 pt-6 pb-5 border-b border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-800">Pengeluaran</h3>
+                    </div>
+                    <button onclick="document.getElementById('modalExpense').classList.add('hidden')"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" action="/transaction/expense" class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tempat Sumber</label>
+                    <select name="source_wallet_id" required
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition">
+                        <option value="" disabled selected>Pilih tempat sumber dana</option>
+                        {% for w in wallets if w.allow_expense %}
+                        <option value="{{ w.id }}">{{ w.name }} (Rp{{ "{:,.0f}".format(w.current_balance) }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1.5">Akun tabungan tidak ditampilkan</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nominal (Rp)</label>
+                    <input type="number" name="amount" required min="1" placeholder="0"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal</label>
+                    <input type="date" name="date" required value="{{ today }}"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Keterangan <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <input type="text" name="description" placeholder="Contoh: Makan siang"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition">
+                </div>
+                <button type="submit"
+                    class="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold py-3 rounded-xl transition cursor-pointer shadow-sm">
+                    Catat Pengeluaran
+                </button>
+            </form>
+        </div>
+    </div>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

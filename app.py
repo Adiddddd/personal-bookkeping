@@ -1,3 +1,4 @@
+from datetime import date
 from flask import Flask, render_template, request, redirect, url_for, flash
 from models import init_db, get_connection, get_wallet_balance
 from seed_data import seed_wallets, show_wallets
@@ -25,7 +26,114 @@ def dashboard():
         })
 
     conn.close()
-    return render_template("dashboard.html", wallets=result, total_uang=total_uang)
+    return render_template(
+        "dashboard.html",
+        wallets=result,
+        total_uang=total_uang,
+        today=date.today().isoformat(),
+    )
+
+
+@app.route("/transaction/income", methods=["POST"])
+def add_income():
+    wallet_id = request.form.get("destination_wallet_id")
+    amount = request.form.get("amount", "0").strip()
+    tx_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not wallet_id:
+        flash("Pilih tempat tujuan.", "error")
+        return redirect(url_for("dashboard"))
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        flash("Nominal tidak valid.", "error")
+        return redirect(url_for("dashboard"))
+
+    if amount <= 0:
+        flash("Nominal harus lebih besar dari Rp0.", "error")
+        return redirect(url_for("dashboard"))
+
+    if not tx_date:
+        flash("Tanggal wajib diisi.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn = get_connection()
+    wallet = conn.execute("SELECT name FROM wallets WHERE id = ?", (wallet_id,)).fetchone()
+    if not wallet:
+        conn.close()
+        flash("Tempat tujuan tidak ditemukan.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn.execute(
+        "INSERT INTO transactions (type, amount, date, destination_wallet_id, description) "
+        "VALUES ('income', ?, ?, ?, ?)",
+        (amount, tx_date, wallet_id, description),
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"Pemasukan Rp{amount:,.0f} ke {wallet['name']} berhasil dicatat.", "success")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/transaction/expense", methods=["POST"])
+def add_expense():
+    wallet_id = request.form.get("source_wallet_id")
+    amount = request.form.get("amount", "0").strip()
+    tx_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not wallet_id:
+        flash("Pilih tempat sumber.", "error")
+        return redirect(url_for("dashboard"))
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        flash("Nominal tidak valid.", "error")
+        return redirect(url_for("dashboard"))
+
+    if amount <= 0:
+        flash("Nominal harus lebih besar dari Rp0.", "error")
+        return redirect(url_for("dashboard"))
+
+    if not tx_date:
+        flash("Tanggal wajib diisi.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn = get_connection()
+    wallet = conn.execute(
+        "SELECT name, allow_expense FROM wallets WHERE id = ?", (wallet_id,)
+    ).fetchone()
+
+    if not wallet:
+        conn.close()
+        flash("Tempat sumber tidak ditemukan.", "error")
+        return redirect(url_for("dashboard"))
+
+    if not wallet["allow_expense"]:
+        conn.close()
+        flash(f'{wallet["name"]} adalah akun tabungan. Tidak bisa langsung pengeluaran. Gunakan transfer ke akun operasional terlebih dahulu.', "error")
+        return redirect(url_for("dashboard"))
+
+    balance = get_wallet_balance(conn, wallet_id)
+    if amount > balance:
+        conn.close()
+        flash(f"Saldo {wallet['name']} tidak mencukupi. Saldo: Rp{balance:,.0f}, Pengeluaran: Rp{amount:,.0f}.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn.execute(
+        "INSERT INTO transactions (type, amount, date, source_wallet_id, description) "
+        "VALUES ('expense', ?, ?, ?, ?)",
+        (amount, tx_date, wallet_id, description),
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"Pengeluaran Rp{amount:,.0f} dari {wallet['name']} berhasil dicatat.", "success")
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/wallet/add", methods=["POST"])
@@ -87,7 +195,7 @@ def health():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  Personal Bookkeeping - Tahap 2")
+    print("  Personal Bookkeeping - Tahap 3")
     print("=" * 50)
 
     print("\n[1/3] Initializing database...")

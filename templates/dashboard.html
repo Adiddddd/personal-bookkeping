@@ -75,20 +75,22 @@
     <div>
         <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Aksi Cepat</h2>
         <div class="flex flex-wrap gap-3">
-            <span class="inline-flex items-center gap-2 bg-white border border-slate-200/80 text-slate-400 text-sm font-semibold px-5 py-3 rounded-xl cursor-not-allowed shadow-sm">
+            <button onclick="document.getElementById('modalIncome').classList.remove('hidden')"
+                class="inline-flex items-center gap-2 bg-white border border-slate-200/80 text-emerald-700 text-sm font-semibold px-5 py-3 rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-all cursor-pointer shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 Pemasukan
-            </span>
-            <span class="inline-flex items-center gap-2 bg-white border border-slate-200/80 text-slate-400 text-sm font-semibold px-5 py-3 rounded-xl cursor-not-allowed shadow-sm">
+            </button>
+            <button onclick="document.getElementById('modalExpense').classList.remove('hidden')"
+                class="inline-flex items-center gap-2 bg-white border border-slate-200/80 text-red-700 text-sm font-semibold px-5 py-3 rounded-xl hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
                 Pengeluaran
-            </span>
+            </button>
             <span class="inline-flex items-center gap-2 bg-white border border-slate-200/80 text-slate-400 text-sm font-semibold px-5 py-3 rounded-xl cursor-not-allowed shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
                 Transfer
             </span>
         </div>
-        <p class="text-xs text-slate-400 mt-3 italic">Fitur transaksi akan tersedia di tahap berikutnya.</p>
+        <p class="text-xs text-slate-400 mt-3 italic">Fitur Transfer akan tersedia di tahap berikutnya.</p>
     </div>
 
 </div>
