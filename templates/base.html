@@ -207,6 +207,103 @@
         </div>
     </div>
 
+    <!-- Modal Transfer -->
+    <div id="modalTransfer" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="document.getElementById('modalTransfer').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md modal-in overflow-hidden">
+            <div class="px-6 pt-6 pb-5 border-b border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-800">Transfer Antar Akun</h3>
+                    </div>
+                    <button onclick="document.getElementById('modalTransfer').classList.add('hidden')"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" action="/transaction/transfer" class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Dari (Sumber)</label>
+                    <select name="source_wallet_id" required id="transferSource"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition">
+                        <option value="" disabled selected>Pilih tempat asal</option>
+                        {% for w in wallets %}
+                        <option value="{{ w.id }}" data-name="{{ w.name }}" data-balance="{{ "{:,.0f}".format(w.current_balance) }}">{{ w.name }} (Rp{{ "{:,.0f}".format(w.current_balance) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex justify-center -my-1">
+                    <span class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"/></svg>
+                    </span>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Ke (Tujuan)</label>
+                    <select name="destination_wallet_id" required id="transferDest"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition">
+                        <option value="" disabled selected>Pilih tempat tujuan</option>
+                        {% for w in wallets %}
+                        <option value="{{ w.id }}" data-name="{{ w.name }}" data-balance="{{ "{:,.0f}".format(w.current_balance) }}">{{ w.name }} (Rp{{ "{:,.0f}".format(w.current_balance) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nominal (Rp)</label>
+                    <input type="number" name="amount" required min="1" placeholder="0"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal</label>
+                    <input type="date" name="date" required value="{{ today }}"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Keterangan <span class="text-slate-400 font-normal">(opsional)</span></label>
+                    <input type="text" name="description" placeholder="Contoh: Menabung ke SeaBank"
+                        class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition">
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 rounded-xl transition cursor-pointer shadow-sm">
+                    Catat Transfer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var src = document.getElementById('transferSource');
+        var dst = document.getElementById('transferDest');
+        var srcDefault = src.options[0];
+        var dstDefault = dst.options[0];
+
+        function filterOptions(changed, target) {
+            var val = changed.value;
+            for (var i = 1; i < target.options.length; i++) {
+                var opt = target.options[i];
+                if (val && opt.value === val) {
+                    opt.disabled = true;
+                    opt.hidden = true;
+                } else {
+                    opt.disabled = false;
+                    opt.hidden = false;
+                }
+            }
+            if (val && target.value === val) {
+                target.value = '';
+                target.options[0].selected = true;
+            }
+        }
+
+        src.addEventListener('change', function() { filterOptions(src, dst); });
+        dst.addEventListener('change', function() { filterOptions(dst, src); });
+    })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

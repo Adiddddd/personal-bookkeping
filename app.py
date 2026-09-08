@@ -136,6 +136,68 @@ def add_expense():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/transaction/transfer", methods=["POST"])
+def add_transfer():
+    source_id = request.form.get("source_wallet_id")
+    dest_id = request.form.get("destination_wallet_id")
+    amount = request.form.get("amount", "0").strip()
+    tx_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not source_id or not dest_id:
+        flash("Pilih tempat asal dan tujuan.", "error")
+        return redirect(url_for("dashboard"))
+
+    if source_id == dest_id:
+        flash("Tempat asal dan tujuan tidak boleh sama.", "error")
+        return redirect(url_for("dashboard"))
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        flash("Nominal tidak valid.", "error")
+        return redirect(url_for("dashboard"))
+
+    if amount <= 0:
+        flash("Nominal harus lebih besar dari Rp0.", "error")
+        return redirect(url_for("dashboard"))
+
+    if not tx_date:
+        flash("Tanggal wajib diisi.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn = get_connection()
+
+    source = conn.execute("SELECT name FROM wallets WHERE id = ?", (source_id,)).fetchone()
+    if not source:
+        conn.close()
+        flash("Tempat asal tidak ditemukan.", "error")
+        return redirect(url_for("dashboard"))
+
+    dest = conn.execute("SELECT name FROM wallets WHERE id = ?", (dest_id,)).fetchone()
+    if not dest:
+        conn.close()
+        flash("Tempat tujuan tidak ditemukan.", "error")
+        return redirect(url_for("dashboard"))
+
+    balance = get_wallet_balance(conn, source_id)
+    if amount > balance:
+        conn.close()
+        flash(f"Saldo {source['name']} tidak mencukupi. Saldo: Rp{balance:,.0f}, Transfer: Rp{amount:,.0f}.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn.execute(
+        "INSERT INTO transactions (type, amount, date, source_wallet_id, destination_wallet_id, description) "
+        "VALUES ('transfer', ?, ?, ?, ?, ?)",
+        (amount, tx_date, source_id, dest_id, description),
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"Transfer Rp{amount:,.0f} dari {source['name']} ke {dest['name']} berhasil dicatat.", "success")
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/wallet/add", methods=["POST"])
 def add_wallet():
     name = request.form.get("name", "").strip()
