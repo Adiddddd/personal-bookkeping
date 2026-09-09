@@ -25,6 +25,14 @@ def dashboard():
             "current_balance": balance,
         })
 
+    total_income = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'income'"
+    ).fetchone()["total"]
+
+    total_expense = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'expense'"
+    ).fetchone()["total"]
+
     rows = conn.execute("""
         SELECT t.*,
             sw.name as source_name,
@@ -64,6 +72,8 @@ def dashboard():
         wallets=result,
         transactions=transactions,
         total_uang=total_uang,
+        total_income=total_income,
+        total_expense=total_expense,
         today=date.today().isoformat(),
     )
 
@@ -373,6 +383,77 @@ def delete_wallet():
     conn.close()
 
     return redirect(url_for("dashboard"))
+
+
+@app.route("/wallet/<int:wallet_id>/detail")
+def wallet_detail(wallet_id):
+    from flask import jsonify
+
+    conn = get_connection()
+    wallet = conn.execute("SELECT * FROM wallets WHERE id = ?", (wallet_id,)).fetchone()
+    if not wallet:
+        conn.close()
+        return jsonify({"error": "Wallet not found"}), 404
+
+    balance = get_wallet_balance(conn, wallet_id)
+
+    total_income = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM transactions "
+        "WHERE destination_wallet_id = ? AND type = 'income'",
+        (wallet_id,),
+    ).fetchone()["total"]
+
+    total_expense = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM transactions "
+        "WHERE source_wallet_id = ? AND type = 'expense'",
+        (wallet_id,),
+    ).fetchone()["total"]
+
+    rows = conn.execute("""
+        SELECT t.*,
+            sw.name as source_name,
+            dw.name as dest_name
+        FROM transactions t
+        LEFT JOIN wallets sw ON t.source_wallet_id = sw.id
+        LEFT JOIN wallets dw ON t.destination_wallet_id = dw.id
+        WHERE t.source_wallet_id = ? OR t.destination_wallet_id = ?
+        ORDER BY t.date DESC, t.id DESC
+    """, (wallet_id, wallet_id)).fetchall()
+
+    transactions = []
+    for r in rows:
+        detail = ""
+        if r["type"] == "income":
+            detail = r["dest_name"] or "-"
+        elif r["type"] == "expense":
+            detail = r["source_name"] or "-"
+        else:
+            detail = f'{r["source_name"] or "?"} → {r["dest_name"] or "?"}'
+
+        transactions.append({
+            "id": r["id"],
+            "type": r["type"],
+            "amount": r["amount"],
+            "date": r["date"],
+            "description": r["description"] or "",
+            "detail": detail,
+        })
+
+    conn.close()
+    return jsonify({
+        "wallet": {
+            "id": wallet["id"],
+            "name": wallet["name"],
+            "allow_expense": bool(wallet["allow_expense"]),
+            "initial_balance": wallet["initial_balance"],
+            "current_balance": balance,
+        },
+        "stats": {
+            "total_income": total_income,
+            "total_expense": total_expense,
+        },
+        "transactions": transactions,
+    })
 
 
 @app.route("/health")
