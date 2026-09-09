@@ -25,10 +25,44 @@ def dashboard():
             "current_balance": balance,
         })
 
+    rows = conn.execute("""
+        SELECT t.*,
+            sw.name as source_name,
+            dw.name as dest_name
+        FROM transactions t
+        LEFT JOIN wallets sw ON t.source_wallet_id = sw.id
+        LEFT JOIN wallets dw ON t.destination_wallet_id = dw.id
+        ORDER BY t.date DESC, t.id DESC
+    """).fetchall()
+
+    transactions = []
+    for r in rows:
+        detail = ""
+        if r["type"] == "income":
+            detail = r["dest_name"] or "-"
+        elif r["type"] == "expense":
+            detail = r["source_name"] or "-"
+        else:
+            detail = f'{r["source_name"] or "?"} → {r["dest_name"] or "?"}'
+
+        transactions.append({
+            "id": r["id"],
+            "type": r["type"],
+            "amount": r["amount"],
+            "date": r["date"],
+            "description": r["description"] or "",
+            "source_name": r["source_name"],
+            "dest_name": r["dest_name"],
+            "source_wallet_id": r["source_wallet_id"],
+            "destination_wallet_id": r["destination_wallet_id"],
+            "detail": detail,
+        })
+
     conn.close()
     return render_template(
         "dashboard.html",
         wallets=result,
+        transactions=transactions,
         total_uang=total_uang,
         today=date.today().isoformat(),
     )
@@ -195,6 +229,97 @@ def add_transfer():
     conn.close()
 
     flash(f"Transfer Rp{amount:,.0f} dari {source['name']} ke {dest['name']} berhasil dicatat.", "success")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/transaction/delete", methods=["POST"])
+def delete_transaction():
+    tx_id = request.form.get("transaction_id")
+    if not tx_id:
+        return redirect(url_for("dashboard"))
+
+    conn = get_connection()
+    tx = conn.execute("SELECT * FROM transactions WHERE id = ?", (tx_id,)).fetchone()
+    if tx:
+        conn.execute("DELETE FROM transactions WHERE id = ?", (tx_id,))
+        conn.commit()
+        flash("Transaksi berhasil dihapus.", "success")
+    conn.close()
+
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/transaction/edit", methods=["POST"])
+def edit_transaction():
+    tx_id = request.form.get("transaction_id")
+    tx_type = request.form.get("type")
+    amount = request.form.get("amount", "0").strip()
+    tx_date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not tx_id or not tx_type:
+        flash("Data transaksi tidak valid.", "error")
+        return redirect(url_for("dashboard"))
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        flash("Nominal tidak valid.", "error")
+        return redirect(url_for("dashboard"))
+
+    if amount <= 0:
+        flash("Nominal harus lebih besar dari Rp0.", "error")
+        return redirect(url_for("dashboard"))
+
+    if not tx_date:
+        flash("Tanggal wajib diisi.", "error")
+        return redirect(url_for("dashboard"))
+
+    conn = get_connection()
+    tx = conn.execute("SELECT * FROM transactions WHERE id = ?", (tx_id,)).fetchone()
+    if not tx:
+        conn.close()
+        flash("Transaksi tidak ditemukan.", "error")
+        return redirect(url_for("dashboard"))
+
+    if tx_type == "expense":
+        balance = get_wallet_balance(conn, tx["source_wallet_id"])
+        old_amount = tx["amount"]
+        if amount > balance + old_amount:
+            conn.close()
+            flash(f"Saldo tidak mencukupi. Saldo: Rp{balance:,.0f}, Pengeluaran baru: Rp{amount:,.0f}.", "error")
+            return redirect(url_for("dashboard"))
+    elif tx_type == "transfer":
+        balance = get_wallet_balance(conn, tx["source_wallet_id"])
+        old_amount = tx["amount"]
+        if amount > balance + old_amount:
+            conn.close()
+            flash(f"Saldo sumber tidak mencukupi untuk nominal baru.", "error")
+            return redirect(url_for("dashboard"))
+
+    conn.execute(
+        "UPDATE transactions SET amount = ?, date = ?, description = ? WHERE id = ?",
+        (amount, tx_date, description, tx_id),
+    )
+    conn.commit()
+    conn.close()
+
+    flash("Transaksi berhasil diperbarui. Saldo telah dikalkulasi ulang.", "success")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/transactions/clear-all", methods=["POST"])
+def clear_all_transactions():
+    conn = get_connection()
+    wallets = conn.execute("SELECT id FROM wallets").fetchall()
+    for w in wallets:
+        current = get_wallet_balance(conn, w["id"])
+        conn.execute("UPDATE wallets SET initial_balance = ? WHERE id = ?", (current, w["id"]))
+    conn.execute("DELETE FROM transactions")
+    conn.commit()
+    conn.close()
+
+    flash("Riwayat transaksi berhasil dibersihkan. Saldo wallet kamu tetap dipertahankan.", "success")
     return redirect(url_for("dashboard"))
 
 
