@@ -11,8 +11,19 @@
         <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-white/[0.05] rounded-full blur-sm"></div>
         <div class="absolute top-8 right-24 w-20 h-20 bg-emerald-400/10 rounded-full blur-sm"></div>
         <div class="relative">
-            <p class="text-sm font-medium text-emerald-100/80 mb-1.5 tracking-wide uppercase">Total Uang</p>
-            <p class="text-4xl sm:text-5xl font-extrabold tracking-tight">Rp{{ "{:,.0f}".format(total_uang) }}</p>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-medium text-white/80">Total Uang Keseluruhan</span>
+                <button id="toggleBalanceBtn" type="button" onclick="toggleBalanceVisibility()" class="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all focus:outline-none" title="Sembunyikan/Tampilkan Saldo">
+                    <svg id="eyeOpenIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg id="eyeClosedIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.02 10.02 0 013.98-.863c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-8.625-1.222a3 3 0 11-4.243-4.243M3 3l18 18" />
+                    </svg>
+                </button>
+            </div>
+            <h2 id="totalBalance" class="text-4xl sm:text-5xl font-extrabold tracking-tight" data-balance="raw" data-original="Rp{{ '{:,.0f}'.format(total_uang) }}">Rp{{ "{:,.0f}".format(total_uang) }}</h2>
             <div class="flex items-center gap-2 mt-3">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <p class="text-xs text-emerald-100/70">{{ wallets|length }} tempat penyimpanan tercatat</p>
@@ -23,14 +34,14 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                         <p class="text-[10px] font-semibold text-emerald-200/70 uppercase tracking-wider">Total Pemasukan</p>
                     </div>
-                    <p class="text-lg sm:text-xl font-extrabold">Rp{{ "{:,.0f}".format(total_income) }}</p>
+                    <p class="text-lg sm:text-xl font-extrabold" data-balance="raw" data-original="Rp{{ '{:,.0f}'.format(total_income) }}">Rp{{ "{:,.0f}".format(total_income) }}</p>
                 </div>
                 <div class="bg-white/[0.08] backdrop-blur-sm rounded-xl px-4 py-3">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="w-2 h-2 rounded-full bg-red-400"></span>
                         <p class="text-[10px] font-semibold text-red-200/70 uppercase tracking-wider">Total Pengeluaran</p>
                     </div>
-                    <p class="text-lg sm:text-xl font-extrabold">Rp{{ "{:,.0f}".format(total_expense) }}</p>
+                    <p class="text-lg sm:text-xl font-extrabold" data-balance="raw" data-original="Rp{{ '{:,.0f}'.format(total_expense) }}">Rp{{ "{:,.0f}".format(total_expense) }}</p>
                 </div>
             </div>
         </div>
@@ -71,7 +82,7 @@
                         </button>
                     </form>
                 </div>
-                <p class="text-2xl font-extrabold text-slate-800 tracking-tight">Rp{{ "{:,.0f}".format(w.current_balance) }}</p>
+                <span class="text-2xl font-extrabold text-slate-800 tracking-tight" data-balance="raw" data-original="Rp{{ '{:,.0f}'.format(w.current_balance) }}">Rp{{ "{:,.0f}".format(w.current_balance) }}</span>
                 <p class="text-xs text-slate-400 mt-1.5">Saldo awal: Rp{{ "{:,.0f}".format(w.initial_balance) }}</p>
             </div>
             {% endfor %}
@@ -369,6 +380,39 @@
 
 {% block scripts %}
 <script>
+function applyBalanceVisibility(isHidden) {
+    var eyeOpen = document.getElementById('eyeOpenIcon');
+    var eyeClosed = document.getElementById('eyeClosedIcon');
+    var elements = document.querySelectorAll('[data-balance="raw"]');
+
+    if (isHidden) {
+        if (eyeOpen) eyeOpen.classList.add('hidden');
+        if (eyeClosed) eyeClosed.classList.remove('hidden');
+        elements.forEach(function(el) {
+            el.innerText = 'Rp \u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+        });
+    } else {
+        if (eyeOpen) eyeOpen.classList.remove('hidden');
+        if (eyeClosed) eyeClosed.classList.add('hidden');
+        elements.forEach(function(el) {
+            var original = el.getAttribute('data-original');
+            if (original) el.innerText = original;
+        });
+    }
+}
+
+function toggleBalanceVisibility() {
+    var currentState = localStorage.getItem('balanceHidden') === 'true';
+    var newState = !currentState;
+    localStorage.setItem('balanceHidden', newState);
+    applyBalanceVisibility(newState);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var isHidden = localStorage.getItem('balanceHidden') === 'true';
+    applyBalanceVisibility(isHidden);
+});
+
 function openEditModal(id, type, txDate, amount, desc, sourceName, destName, sourceId, destId) {
     document.getElementById('editTxId').value = id;
     document.getElementById('editTxType').value = type;

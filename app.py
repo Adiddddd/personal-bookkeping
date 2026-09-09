@@ -333,6 +333,18 @@ def clear_all_transactions():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/reset-all", methods=["POST"])
+def reset_all():
+    conn = get_connection()
+    conn.execute("DELETE FROM transactions")
+    conn.execute("UPDATE wallets SET initial_balance = 0")
+    conn.commit()
+    conn.close()
+
+    flash("Semua data berhasil direset. Saldo dan riwayat transaksi telah dikosongkan.", "success")
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/wallet/add", methods=["POST"])
 def add_wallet():
     name = request.form.get("name", "").strip()
