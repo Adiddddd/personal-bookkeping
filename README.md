@@ -146,17 +146,6 @@ On first launch, the app automatically initializes the SQLite database and seeds
 
 ---
 
-## Default Wallets
-
-| Wallet | Category | Income | Expense | Transfer |
-|--------|----------|:------:|:-------:|:--------:|
-| Dompet | Operational (Cash) | Yes | Yes | Yes |
-| DANA | Operational (E-Wallet) | Yes | Yes | Yes |
-| Wondr BNI | Operational (Bank) | Yes | Yes | Yes |
-| SeaBank | Savings | Yes | **No** | Yes |
-
----
-
 ## License
 
 This project is for personal use. Feel free to fork and modify for your own needs.
